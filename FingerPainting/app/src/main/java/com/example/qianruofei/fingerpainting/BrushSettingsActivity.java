@@ -63,7 +63,7 @@ public class BrushSettingsActivity extends AppCompatActivity {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 curWidth.setText("Current width:" + progress + "px ");
-                settings[1] = String.valueOf(progress);
+                settings[0] = String.valueOf(progress);
             }
 
             @Override
@@ -80,13 +80,9 @@ public class BrushSettingsActivity extends AppCompatActivity {
 
     public void returnSettings(View v) {
 
-        //settings = new String[2];
         final TextView shapeSetting = (TextView)findViewById(R.id.ShowShape);
-        //final EditText widthSetting = (EditText)findViewById(R.id.WidthSetting);
 
-        settings[0] = shapeSetting.getText().toString();
-        //settings[1] = String.valueOf(newWidth);
-        //settings[1] = String.valueOf(myFingerPainterView.getBrushWidth());
+        settings[1] = shapeSetting.getText().toString();
 
         Bundle bundle = new Bundle();
         Intent result = new Intent();
