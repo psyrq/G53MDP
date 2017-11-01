@@ -12,6 +12,7 @@ public class MainActivity extends AppCompatActivity {
 
     Context mContext;
 
+    //  request code for two activities
     static final int ACTIVITY_COLOUR_SELECT_REQUEST_CODE = 1;
     static final int ACTIVITY_BRUSH_SETTINGS_REQUEST_CODE = 2;
 
@@ -32,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onSaveInstanceState(Bundle outState) {
+    protected void onSaveInstanceState(Bundle outState) {// save the user preferences
 
         super.onSaveInstanceState(outState);
 
@@ -47,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
-
+        //  load settings
         super.onRestoreInstanceState(savedInstanceState);
 
         if(savedInstanceState.getString("Shape").equals("Round"))
@@ -69,13 +70,17 @@ public class MainActivity extends AppCompatActivity {
 
         String[] brushInfo = new String[2];
         String curBrushShape;
+
+        //  get current brush width
         int curBrushWidth = myFingerPainterView.getBrushWidth();
 
+        //  get current brush shape
         if(Paint.Cap.ROUND.equals(myFingerPainterView.getBrush()))
             curBrushShape = "Round";
         else
             curBrushShape = "Square";
 
+        //put brush shape and width into a string array for BrushSettingsActivity to load
         brushInfo[0] = String.valueOf(curBrushWidth);
         brushInfo[1] = curBrushShape;
 
@@ -85,6 +90,11 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(MainActivity.this, BrushSettingsActivity.class);
         intent.putExtras(bundle);
         startActivityForResult(intent, ACTIVITY_BRUSH_SETTINGS_REQUEST_CODE);
+    }
+
+    public void clear(View v) {
+        //clear all the things that have already done on the canvas, include the loaded image
+        myFingerPainterView.clearCanvas();
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -137,21 +147,20 @@ public class MainActivity extends AppCompatActivity {
     }
     @Override
     protected void onResume() {
-        Log.i("G53MDP", "Main onResume");
-
         // TODO Auto-generated method stub
+        Log.i("G53MDP", "Main onResume");
         super.onResume();
     }
     @Override
     protected void onStart() {
-        Log.i("G53MDP", "Main onStart");
         // TODO Auto-generated method stub
+        Log.i("G53MDP", "Main onStart");
         super.onStart();
     }
     @Override
     protected void onStop() {
-        Log.i("G53MDP", "Main onStop");
         // TODO Auto-generated method stub
+        Log.i("G53MDP", "Main onStop");
         super.onStop();
     }
 }

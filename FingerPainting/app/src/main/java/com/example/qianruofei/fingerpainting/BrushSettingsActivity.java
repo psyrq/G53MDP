@@ -13,9 +13,9 @@ import android.widget.Toast;
 public class BrushSettingsActivity extends AppCompatActivity {
 
     private SeekBar mySeekBar;
-    private Context mContext;
     private TextView curWidth;
 
+    //  a string array to save the new brush settings
     private String[] settings = new String[2];
 
     @Override
@@ -27,6 +27,7 @@ public class BrushSettingsActivity extends AppCompatActivity {
         Bundle bundle = getIntent().getExtras();
         settings = bundle.getStringArray("curBrushInfo");
 
+        //  show the old brush settings
         final TextView oldWidth = (TextView)findViewById(R.id.CurWidth);
         oldWidth.setText("Current width:" + settings[0] + "px ");
 
@@ -36,7 +37,6 @@ public class BrushSettingsActivity extends AppCompatActivity {
         final TextView oldShape = (TextView)findViewById(R.id.ShowShape);
         oldShape.setText(settings[1]);
 
-        mContext = BrushSettingsActivity.this;
         seekBarView();
     }
 
@@ -54,7 +54,7 @@ public class BrushSettingsActivity extends AppCompatActivity {
         shapeChoice.setText(shape);
     }
 
-    public void seekBarView() {
+    public void seekBarView() {//   seekBar settings
         mySeekBar = (SeekBar)findViewById(R.id.MySeekBar);
         curWidth = (TextView)findViewById(R.id.CurWidth);
 
@@ -68,12 +68,12 @@ public class BrushSettingsActivity extends AppCompatActivity {
 
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
-                Toast.makeText(mContext, "press", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(mContext, "press", Toast.LENGTH_SHORT).show();
             }
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                Toast.makeText(mContext, "loosen", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(mContext, "loosen", Toast.LENGTH_SHORT).show();
             }
         });
     }

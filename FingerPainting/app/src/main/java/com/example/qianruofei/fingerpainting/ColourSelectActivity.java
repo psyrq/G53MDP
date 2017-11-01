@@ -14,6 +14,7 @@ public class ColourSelectActivity extends AppCompatActivity {
         setContentView(R.layout.activity_colour_select);
     }
 
+    //  four buttons represent four different colours respectively for users to select
     public void ReturnRed(View v) {
 
         Bundle bundle = new Bundle();

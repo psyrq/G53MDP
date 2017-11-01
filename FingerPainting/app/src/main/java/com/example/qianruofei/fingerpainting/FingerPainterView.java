@@ -84,6 +84,10 @@ public class FingerPainterView extends View {
         paint.setARGB(255,0,0,0);
     }
 
+    public void clearCanvas() {
+        draw(canvas);
+    }
+
     public void setBrush(Paint.Cap brush) {
         paint.setStrokeCap(brush);
     }
