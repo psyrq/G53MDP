@@ -1,7 +1,7 @@
 package com.example.psyrq.mp3player;
 
 /**
- * Created by qianruofei on 2017/11/9.
+ * Created by qianruofei on 2017/11/14.
  */
 
 import android.media.AudioManager;
@@ -9,6 +9,9 @@ import android.media.MediaPlayer;
 import android.util.Log;
 import java.io.IOException;
 
+/**
+ * Created by pszmdf on 06/11/16.
+ */
 public class MP3Player {
 
     protected MediaPlayer mediaPlayer;

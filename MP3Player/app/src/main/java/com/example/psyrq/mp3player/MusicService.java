@@ -2,39 +2,69 @@ package com.example.psyrq.mp3player;
 
 import android.app.Service;
 import android.content.Intent;
-import android.media.MediaPlayer;
-import android.os.Environment;
+import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
-import java.io.File;
-import java.io.FilenameFilter;
-import java.util.List;
-
 public class MusicService extends Service {
 
-    private final String Tag = "G53MDP";
-    private static final File musicPath = Environment.getExternalStorageDirectory();
-    public List<String> musicList;
-    public MediaPlayer player;
-    public int songMum;
-    public String songName;
+    MP3Player myPlayer;
+    private final String tag = "music service";
+    private MusicBinder binder = new MusicBinder();
 
-    public MusicService() {
-        super();
+    public class MusicBinder extends Binder {
+
+        public void load(String filePath) {
+            myPlayer.load(filePath);
+            Log.i(tag, filePath);
+        }
+
+        public void play() {
+            myPlayer.play();
+            Log.i(tag, "play music");
+        }
+
+        public void pause() {
+            myPlayer.pause();
+            Log.i(tag, "pause music");
+        }
+
+        public void stop() {
+            myPlayer.stop();
+            Log.i(tag, "stop music");
+        }
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        Log.i(Tag, "music service onBind");
-        return null;
+
+        Log.i(tag, "onBind");
+        return binder;
     }
 
-    class MusicFilter implements FilenameFilter {
+    @Override
+    public void onCreate() {
 
-        public  boolean accept(File dir, String name) {
+        super.onCreate();
+        myPlayer = new MP3Player();
+    }
 
-            return (name.endsWith(".mp3"));
-        }
+    @Override
+    public boolean onUnbind(Intent intent) {
+        Log.i(tag, "onUnbind");
+        myPlayer.stop();
+        return true;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Log.i(tag, "onDestroy");
+    }
+
+    @Override
+    public void onRebind(Intent intent) {
+        Log.i(tag, "onRebind");
+        super.onRebind(intent);
     }
 }
