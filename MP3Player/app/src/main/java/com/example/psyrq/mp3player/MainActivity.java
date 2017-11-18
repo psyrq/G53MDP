@@ -18,10 +18,14 @@ import java.io.File;
 
 public class MainActivity extends AppCompatActivity {
 
+    private ListView lv;
     private Intent intent;
     MusicService.MusicBinder binder;
     private ServiceConnection musicConnection = null;
 
+    private int songIndex = 0;
+    private File list[];
+    private File selectedFromList;
     private final String tag = "music main activity";
 
     @Override
@@ -37,10 +41,11 @@ public class MainActivity extends AppCompatActivity {
 
     private void setListViewAdapter() {
 
-        final ListView lv = (ListView)findViewById(R.id.Playlist);
+        lv = (ListView)findViewById(R.id.Playlist);
 
         File musicDir = new File(Environment.getExternalStorageDirectory().getPath()+"/Music/");
-        File list[] = musicDir.listFiles();
+        list = musicDir.listFiles();
+        Log.i(tag, "there are " + list.length + " songs in playlist");
 
         lv.setAdapter(new ArrayAdapter<File>(this, android.R.layout.simple_list_item_1, list));
 
@@ -48,7 +53,8 @@ public class MainActivity extends AppCompatActivity {
 
             public void onItemClick(AdapterView<?> myAdapter, View myView, int myItemInt, long mylng) {
 
-                final File selectedFromList =(File) (lv.getItemAtPosition(myItemInt));
+                selectedFromList =(File) (lv.getItemAtPosition(myItemInt));
+                getSongIndex();
 
                 if(musicConnection != null) unbindService(musicConnection);
 
@@ -86,7 +92,27 @@ public class MainActivity extends AppCompatActivity {
 
     public void stop(View v) {
         binder.stop();
+        unbindService(musicConnection);
         Log.i(tag, "stop music and disconnect to the service");
+    }
+
+    public void prev(View v) {
+        binder.stop();
+        songIndex = binder.getPrevOrNext(list, songIndex, "prev");
+        binder.load(list[songIndex].getAbsolutePath());
+    }
+
+    public void next(View v) {
+        binder.stop();
+        songIndex = binder.getPrevOrNext(list, songIndex, "next");
+        binder.load(list[songIndex].getAbsolutePath());
+    }
+
+    public void getSongIndex() {
+        for(int i = 0; i < list.length; i++) {
+            if(list[i].getAbsolutePath().equals(selectedFromList.getAbsolutePath()))
+                songIndex = i;
+        }
     }
 
     @Override
