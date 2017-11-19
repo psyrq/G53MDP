@@ -4,6 +4,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.media.MediaPlayer;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
@@ -43,24 +44,50 @@ public class MusicService extends Service {
             Log.i(tag, "stop music");
         }
 
+        public int getDuration() {
+            return myPlayer.getDuration();
+        }
+
+        public int getProgress() {
+            return myPlayer.getProgress();
+        }
+
+        public String getFilePath() {
+            return myPlayer.getFilePath();
+        }
+
+        public MP3Player.MP3PlayerState getState() {
+            return myPlayer.getState();
+        }
+
+        public void seekTo(int msec) {
+            myPlayer.seekTo(msec);
+        }
+
+        public String setPlayName(String filePath) {
+
+            int indexLastSlash = filePath.lastIndexOf("/");
+            int indexLastDot = filePath.lastIndexOf(".");
+            String songName = filePath.substring(indexLastSlash+1, indexLastDot);
+
+            return songName;
+        }
+
         public int getPrevOrNext(File list[], int songIndex, String prevOrNext) {
 
             int sumSongs = list.length;
             Log.i(tag, "current song is " + list[songIndex]);
 
             if(prevOrNext.equals("prev")) {
-
                 if((songIndex-1) < 0) songIndex = sumSongs - 1;
                 else songIndex -= 1;
             }
             else {
-
                 if((songIndex+1) > (sumSongs-1)) songIndex = 0;
                 else songIndex += 1;
             }
             return songIndex;
         }
-
     }
 
     @Override

@@ -100,4 +100,8 @@ public class MP3Player {
             mediaPlayer = null;
         }
     }
+
+    public void seekTo(int msec) {
+        mediaPlayer.seekTo(msec);
+    }
 }

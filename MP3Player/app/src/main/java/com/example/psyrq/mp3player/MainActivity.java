@@ -13,6 +13,8 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.SeekBar;
+import android.widget.TextView;
 
 import java.io.File;
 
@@ -23,7 +25,11 @@ public class MainActivity extends AppCompatActivity {
     MusicService.MusicBinder binder;
     private ServiceConnection musicConnection = null;
 
+    private TextView musicInfo = null;
+    private SeekBar musicProcess = null;
+
     private int songIndex = 0;
+
     private File list[];
     private File selectedFromList;
     private final String tag = "music main activity";
@@ -36,6 +42,11 @@ public class MainActivity extends AppCompatActivity {
 
         intent = new Intent(this, MusicService.class);
 
+        musicInfo = (TextView) findViewById(R.id.musicInfo);
+        musicProcess = (SeekBar) findViewById(R.id.musicProcess);
+
+        trackSeekBar();
+
         setListViewAdapter();
     }
 
@@ -45,7 +56,6 @@ public class MainActivity extends AppCompatActivity {
 
         File musicDir = new File(Environment.getExternalStorageDirectory().getPath()+"/Music/");
         list = musicDir.listFiles();
-        Log.i(tag, "there are " + list.length + " songs in playlist");
 
         lv.setAdapter(new ArrayAdapter<File>(this, android.R.layout.simple_list_item_1, list));
 
@@ -68,12 +78,12 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onServiceDisconnected(ComponentName name) {
-
                         Log.i(tag, "disconnect to service");
                     }
                 };
 
                 bindService(intent, musicConnection, Service.BIND_AUTO_CREATE);
+                musicProcess.postDelayed(updatePerSec, 1000);
 
                 Log.i(tag, selectedFromList.getAbsolutePath());
             }
@@ -81,38 +91,117 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void play(View v) {
-        binder.play();
-        Log.i(tag, "play music");
+
+        if(binder != null)
+            binder.play();
     }
 
     public void pause(View v) {
-        binder.pause();
-        Log.i(tag, "pause music");
+        if(binder != null)
+            binder.pause();
     }
 
     public void stop(View v) {
-        binder.stop();
-        unbindService(musicConnection);
-        Log.i(tag, "stop music and disconnect to the service");
+
+        if(binder != null) {
+            binder.stop();
+            musicProcess.setProgress(0);
+            musicInfo.setText("");
+        }
+
     }
 
     public void prev(View v) {
-        binder.stop();
-        songIndex = binder.getPrevOrNext(list, songIndex, "prev");
-        binder.load(list[songIndex].getAbsolutePath());
+
+        if(binder != null) {
+            binder.stop();
+            songIndex = binder.getPrevOrNext(list, songIndex, "prev");
+            binder.load(list[songIndex].getAbsolutePath());
+            musicProcess.postDelayed(updatePerSec, 1000);
+        }
     }
 
     public void next(View v) {
-        binder.stop();
-        songIndex = binder.getPrevOrNext(list, songIndex, "next");
-        binder.load(list[songIndex].getAbsolutePath());
+
+        if(binder != null) {
+            binder.stop();
+            songIndex = binder.getPrevOrNext(list, songIndex, "next");
+            binder.load(list[songIndex].getAbsolutePath());
+            musicProcess.postDelayed(updatePerSec, 1000);
+        }
     }
 
     public void getSongIndex() {
+
         for(int i = 0; i < list.length; i++) {
             if(list[i].getAbsolutePath().equals(selectedFromList.getAbsolutePath()))
                 songIndex = i;
         }
+    }
+
+    private Runnable updatePerSec = new Runnable() {
+
+        @Override
+        public void run() {
+            if(musicProcess != null) {
+                if(binder.getDuration() != 0) {
+                    musicProcess.setProgress(binder.getProgress() * musicProcess.getMax() / binder.getDuration());
+                    setMusicInfo(selectedFromList.getAbsolutePath(), translateTimeFormat(binder.getProgress()), translateTimeFormat(binder.getDuration()));
+                }
+
+                if(binder.getState().equals(MP3Player.MP3PlayerState.PLAYING))
+                    musicProcess.postDelayed(updatePerSec, 1000);
+            }
+        }
+    };
+
+    private void setMusicInfo(String songName, String songProgress, String songDuration) {
+
+        songName = binder.setPlayName(binder.getFilePath());
+        musicInfo.setText("current: " + songName + "  " + songProgress + "/" + songDuration);
+    }
+
+    private String translateTimeFormat(long msec) {
+
+        String finalTimerString = "";
+        String secondsString = "";
+
+        // Convert total duration into time
+        int hours = (int) (msec / (1000 * 60 * 60));
+        int minutes = (int) (msec % (1000 * 60 * 60)) / (1000 * 60);
+        int seconds = (int) ((msec % (1000 * 60 * 60)) % (1000 * 60) / 1000);
+        // Add hours if there
+        if (hours > 0) {
+            finalTimerString = hours + ":";
+        }
+
+        // Prepending 0 to seconds if it is one digit
+        if (seconds < 10) {
+            secondsString = "0" + seconds;
+        } else {
+            secondsString = "" + seconds;
+        }
+
+        finalTimerString = finalTimerString + minutes + ":" + secondsString;
+
+        // return timer string
+        return finalTimerString;
+    }
+
+    private void trackSeekBar() {
+
+        musicProcess.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {}
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                binder.seekTo(binder.getDuration() * musicProcess.getProgress() / seekBar.getMax());
+            }
+        });
     }
 
     @Override
