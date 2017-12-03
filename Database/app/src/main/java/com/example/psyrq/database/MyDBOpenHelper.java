@@ -16,8 +16,8 @@ public class MyDBOpenHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        db.execSQL("DROP TABLE IF EXISTS person");
-        db.execSQL("CREATE TABLE person(personid INTEGER PRIMARY KEY AUTOINCREMENT,name VARCHAR(20))");
+        db.execSQL("DROP TABLE IF EXISTS recipe");
+        db.execSQL("CREATE TABLE recipe(recipeId INTEGER PRIMARY KEY AUTOINCREMENT,title VARCHAR(128), contents VARCHAR(8000))");
     }
 
     @Override

@@ -16,11 +16,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <provider
+            android:name=".NameContentProvider"
             android:authorities="com.example.psyrq.myprovider"
-            android:name="com.example.psyrq.database.NameContentProvider"
-            android:exported="true">
-        </provider>
+            android:exported="true" />
+
+        <activity android:name=".InsertActivity" />
+        <activity android:name=".UpdateActivity" />
+        <activity android:name=".RecipeDetailsActivity"></activity>
     </application>
 
 </manifest>

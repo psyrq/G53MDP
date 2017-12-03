@@ -2,11 +2,9 @@ package com.example.psyrq.database;
 
 import android.app.Activity;
 import android.content.ContentResolver;
-import android.content.ContentValues;
 import android.content.Context;
-import android.database.Cursor;
+import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -45,11 +43,14 @@ public class MainActivity extends Activity {
 
             @Override
             public void onClick(View v) {
-                ContentValues values = new ContentValues();
-                values.put("name", "测试");
-                Uri uri = Uri.parse("content://com.example.psyrq.myprovider/person");
-                resolver.insert(uri, values);
-                Toast.makeText(getApplicationContext(), "数据插入成功", Toast.LENGTH_SHORT).show();
+                Intent insertIntent = new Intent(MainActivity.this, InsertActivity.class);
+                startActivity(insertIntent);
+//                ContentValues values = new ContentValues();
+//                values.put("title", "test title");
+//                values.put("contents", "test contents");
+//                Uri uri = Uri.parse("content://com.example.psyrq.myprovider/recipe");
+//                resolver.insert(uri, values);
+//                Toast.makeText(getApplicationContext(), "数据插入成功", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -57,17 +58,20 @@ public class MainActivity extends Activity {
 
             @Override
             public void onClick(View v) {
-                sb = new StringBuilder();
-                Cursor cursor = db.query("person", null, null, null, null, null, null);
-                if (cursor.moveToFirst()) {
-                    do {
-                        int pid = cursor.getInt(cursor.getColumnIndex("personid"));
-                        String name = cursor.getString(cursor.getColumnIndex("name"));
-                        sb.append("id：" + pid + "：" + name + "\n");
-                    } while (cursor.moveToNext());
-                }
-                cursor.close();
-                Toast.makeText(mContext, sb.toString(), Toast.LENGTH_SHORT).show();
+                Intent viewIntent = new Intent(MainActivity.this, UpdateActivity.class);
+                startActivity(viewIntent);
+//                sb = new StringBuilder();
+//                Cursor cursor = db.query("recipe", null, null, null, null, null, null);
+//                if (cursor.moveToFirst()) {
+//                    do {
+//                        int recipeId = cursor.getInt(cursor.getColumnIndex("recipeId"));
+//                        String name = cursor.getString(cursor.getColumnIndex("title"));
+//                        String content = cursor.getString(cursor.getColumnIndex("contents"));
+//                        sb.append("id：" + recipeId + "：" + name + " content: " + content + "\n");
+//                    } while (cursor.moveToNext());
+//                }
+//                cursor.close();
+//                Toast.makeText(mContext, sb.toString(), Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -75,20 +79,10 @@ public class MainActivity extends Activity {
 
             @Override
             public void onClick(View v) {
-                db.execSQL("drop table if exists person;");
-                db.execSQL("CREATE TABLE person(personid INTEGER PRIMARY KEY AUTOINCREMENT,name VARCHAR(20))");
+                db.execSQL("drop table if exists recipe");
+                db.execSQL("CREATE TABLE recipe(recipeId INTEGER PRIMARY KEY AUTOINCREMENT,title VARCHAR(128), contents VARCHAR(8000))");
                 Toast.makeText(mContext, "成功删除全部", Toast.LENGTH_SHORT).show();
             }
         });
-    }
-
-    public long getCount()
-    {
-        //SQLiteDatabase db = myDBHelper.getReadableDatabase();
-        Cursor cursor =  db.rawQuery("SELECT COUNT (*) FROM person",null);
-        cursor.moveToFirst();
-        long result = cursor.getLong(0);
-        cursor.close();
-        return result;
     }
 }

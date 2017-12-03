@@ -18,7 +18,7 @@ public class NameContentProvider extends ContentProvider {
     private MyDBOpenHelper dbOpenHelper;
 
     static {
-        matcher.addURI("com.example.psyrq.myprovider", "person", 1);
+        matcher.addURI("com.example.psyrq.myprovider", "recipe", 1);
     }
 
     @Override
@@ -43,12 +43,15 @@ public class NameContentProvider extends ContentProvider {
         switch (matcher.match(uri)) {
             case 1:
                 SQLiteDatabase db = dbOpenHelper.getReadableDatabase();
-                long id = db.insert("person", null, values);
+                long id = db.insert("recipe", null, values);
                 if(id > 0) {
                     Uri nameUri = ContentUris.withAppendedId(uri, id);
                     getContext().getContentResolver().notifyChange(nameUri, null);
                     return nameUri;
                 }
+                break;
+            default:
+                break;
         }
         return null;
     }
