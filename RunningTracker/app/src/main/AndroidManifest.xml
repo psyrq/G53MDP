@@ -18,11 +18,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        
+        <provider
+            android:authorities="com.example.psyrq.trackerprovider"
+            android:name="com.example.psyrq.runningtracker.TrackerContentProvider">
+        </provider>
 
         <service
             android:name=".TrackerService"
             android:enabled="true"
-            android:exported="true"></service>
+            android:exported="true" />
+
+        <activity android:name=".Details"></activity>
     </application>
 
 </manifest>

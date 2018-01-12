@@ -15,13 +15,16 @@ public class MainActivity extends AppCompatActivity {
 
     private final String tag = "running tracker";
 
-    TextView longitude, latitude;
+    TextView longitude, latitude, systemDate;
     TrackerService.TrackerBinder binder;
 
     double[] location = new double[2];
 
     private Intent intent;
     ServiceConnection trackerConnection = null;
+
+//    long dateMili = System.currentTimeMillis();
+//    Date date = new Date(dateMili);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
 
         longitude = (TextView)findViewById(R.id.longitudeView);
         latitude = (TextView)findViewById(R.id.latitudeView);
+        //systemDate = (TextView)findViewById(R.id.systemDate);
 
         Log.d(tag, "main onCreate");
     }
@@ -41,26 +45,30 @@ public class MainActivity extends AppCompatActivity {
         connectTrackerService();
         longitude.setText("longitude:" + location[0]);
         latitude.setText("latitude: " + location[1]);
+        //systemDate.setText(date.toString());
         Log.d(tag, "press start button");
     }
 
     private void connectTrackerService() {
 
-        trackerConnection = new ServiceConnection() {
-            @Override
-            public void onServiceConnected(ComponentName name, IBinder service) {
-                binder = (TrackerService.TrackerBinder)service;
-                location = binder.getLocation();
-                Log.d(tag, "connect to tracker service");
-            }
+        if(trackerConnection == null) {
 
-            @Override
-            public void onServiceDisconnected(ComponentName name) {
-                Log.d(tag, "disconnect to service");
-            }
-        };
+            trackerConnection = new ServiceConnection() {
+                @Override
+                public void onServiceConnected(ComponentName name, IBinder service) {
+                    binder = (TrackerService.TrackerBinder)service;
+                    location = binder.getCoordinate();
+                    Log.d(tag, "connect to tracker service");
+                }
 
-        bindService(intent, trackerConnection, Service.BIND_AUTO_CREATE);
+                @Override
+                public void onServiceDisconnected(ComponentName name) {
+                    Log.d(tag, "disconnect to service");
+                }
+            };
+
+            bindService(intent, trackerConnection, Service.BIND_AUTO_CREATE);
+        }
     }
 
     @Override

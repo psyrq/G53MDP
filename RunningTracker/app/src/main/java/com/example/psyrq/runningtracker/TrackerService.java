@@ -1,8 +1,11 @@
 package com.example.psyrq.runningtracker;
 
 import android.app.Service;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -13,34 +16,40 @@ import android.util.Log;
 
 public class TrackerService extends Service {
 
+    Context mContext;
+    private SQLiteDatabase db;
+    private TrackerDBOpenHelper myDBHelper;
+    private ContentResolver resolver;
+
     private final String tag = "running tracker service";
     private TrackerBinder binder = new TrackerBinder();
 
     private double myLatitude;
     private double myLongitude;
-    private double[] curLocation = new double[2];
+    private double[] curCoordinate = new double[2];
 
     LocationManager locationManager;
     MyLocationListener locationListener;
 
     public class TrackerBinder extends Binder {
 
-//        public void start() {
-//
-//            locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-//            locationListener = new MyLocationListener();
-//
-//            try{
-//                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 5, locationListener);
-//                curLocation[0] = myLongitude;
-//                curLocation[1] = myLatitude;
-//            }catch(SecurityException se) {
-//                Log.i(tag, se.toString());
-//            }
-//        }
+        public double[] getCoordinate() {
+            return curCoordinate;
+        }
 
-        public double[] getLocation() {
-            return curLocation;
+        public float getDistance(Location lastLocation, Location curLocation) {
+
+            float distance = curLocation.distanceTo(lastLocation);
+            return distance;
+        }
+
+        public Location CoordinateToLocation(double[] coordinate) {
+
+            Location location = new Location("point");
+            location.setLatitude(coordinate[0]);
+            location.setLongitude(coordinate[1]);
+
+            return location;
         }
     }
 
@@ -48,8 +57,16 @@ public class TrackerService extends Service {
 
         @Override
         public void onLocationChanged(Location location) {
+
             myLatitude = location.getLatitude();
             myLongitude = location.getLongitude();
+
+            ContentValues insertValues = new ContentValues();
+            insertValues.put("trackerLatitude", myLatitude);
+            insertValues.put("trackerLongitude", myLongitude);
+            insertValues.put("trackerLocation", location.toString());
+            resolver.insert(TrackerProviderContract.URI.ID_INSERT, insertValues);
+
             Log.d(tag, location.getLatitude() + " " + location.getLongitude());
         }
 
@@ -77,15 +94,22 @@ public class TrackerService extends Service {
 
     @Override
     public void onCreate() {
+
         super.onCreate();
+
+        mContext = TrackerService.this;
+        myDBHelper = new TrackerDBOpenHelper(mContext, "tracker.db", null, 1);
+
+        resolver = this.getContentResolver();
+        //db = myDBHelper.getWritableDatabase();
 
         locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
         locationListener = new MyLocationListener();
 
         try{
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 5, locationListener);
-            curLocation[0] = myLongitude;
-            curLocation[1] = myLatitude;
+            curCoordinate[0] = myLongitude;
+            curCoordinate[1] = myLatitude;
         }catch(SecurityException se) {
             Log.i(tag, se.toString());
         }
