@@ -16,6 +16,8 @@ public class TrackerContentProvider extends ContentProvider {
 
     final static int ID_INSERT = 1;
     final static int ID_QUERY = 2;
+    final static int ID_UPDATE = 3;
+    final static int ID_DELETE = 4;
 
     private static UriMatcher matcher = new UriMatcher(UriMatcher.NO_MATCH);
     private TrackerDBOpenHelper dbOpenHelper;
@@ -24,6 +26,8 @@ public class TrackerContentProvider extends ContentProvider {
     static {
         matcher.addURI(TrackerProviderContract.AUTHORITY, "tracker/insert", ID_INSERT);
         matcher.addURI(TrackerProviderContract.AUTHORITY, "tracker/query", ID_QUERY);
+        matcher.addURI(TrackerProviderContract.AUTHORITY, "tracker/update", ID_UPDATE);
+        matcher.addURI(TrackerProviderContract.AUTHORITY, "tracker/delete", ID_DELETE);
     }
 
     @Override
@@ -69,7 +73,16 @@ public class TrackerContentProvider extends ContentProvider {
 
     @Override
     public int delete(Uri uri, String selection, String[] selectionArgs) {
-        return 0;
+
+        switch(matcher.match(uri)) {
+            case ID_DELETE:
+                db = dbOpenHelper.getWritableDatabase();
+                int id = db.delete("tracker", selection, selectionArgs);
+                getContext().getContentResolver().notifyChange(TrackerProviderContract.BASE_URI, null);
+                return id;
+            default:
+                throw new IllegalArgumentException("unknown uri " + uri);
+        }
     }
 
     @Override
