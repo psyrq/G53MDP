@@ -2,21 +2,20 @@ package com.example.psyrq.runningtracker;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+
 public class Details extends AppCompatActivity {
 
+    private final String tag = "tracker details";
+
     Bundle bundle;
-
-    float[] distances;
-    float[] lastDistances;
-
-    long[] durations;
-    long[] lastDurations;
-
-    float[] speeds;
-    float[] lastSpeeds;
+    ArrayList<float[]> allDistances;
+    ArrayList<float[]> allDurations;
+    int numMarkers;
 
     TextView avgSpeed, fastestSpeed, totalDistance, lastDistance, lastAvgSpeed, lastFastestSpeed;
 
@@ -27,15 +26,8 @@ public class Details extends AppCompatActivity {
         setContentView(R.layout.activity_details);
 
         bundle = getIntent().getExtras();
-
-        distances = bundle.getFloatArray("distances");
-        lastDistances = bundle.getFloatArray("lastDistances");
-
-        durations = bundle.getLongArray("durations");
-        lastDurations = bundle.getLongArray("lastDurations");
-
-        speeds = bundle.getFloatArray("speeds");
-        lastSpeeds = bundle.getFloatArray("lastSpeeds");
+        getAllInfo();
+        Log.i(tag,"number of markers: " + numMarkers);
 
         avgSpeed = (TextView)findViewById(R.id.AvgSpeed);
         fastestSpeed = (TextView)findViewById(R.id.FastestSpeed);
@@ -45,20 +37,58 @@ public class Details extends AppCompatActivity {
         lastAvgSpeed = (TextView)findViewById(R.id.LastAvgSpeed);
         lastFastestSpeed = (TextView)findViewById(R.id.LastFastestSpeed);
 
-        avgSpeed.setText("    average speed in all records: " + avgSpeed(distances, durations) + "m/s");
-        fastestSpeed.setText("    fastest speed in all records: " + fastestSpeed(speeds) + "m/s");
-        totalDistance.setText("    total distance in all records: " + totalDistances(distances) + "m");
+        //if only one record in the database, there will be no last record
+        if(numMarkers <= 1 ) {
+            lastAvgSpeed.setText("    average speed: No record");
+            lastFastestSpeed.setText("    fastest speed: No record");
+            lastDistance.setText("    total distance: No record");
+        }
 
-        lastAvgSpeed.setText("    average speed in last records: " + avgSpeed(lastDistances, lastDurations) + "m/s");
-        lastFastestSpeed.setText("    fastest speed last all records: " + fastestSpeed(lastSpeeds) + "m/s");
-        lastDistance.setText("    total distance in last records: " + totalDistances(lastDistances) + "m");
+        else {
+            lastAvgSpeed.setText("    average speed: " + avgSpeed(allDistances.get(allDistances.size()-2), allDurations.get(allDurations.size()-2)) + "m/s");
+            lastFastestSpeed.setText("    fastest speed: " +
+                    fastestSpeed(calculateSpeeds(allDistances.get(allDistances.size()-2), allDurations.get(allDurations.size()-2))) + "m/s");
+            lastDistance.setText("    total distance: " + totalDistances(allDistances.get(allDistances.size()-2)) + "m");
+        }
+
+        avgSpeed.setText("    average speed: " + avgSpeed(allDistances.get(allDistances.size()-1), allDurations.get(allDistances.size()-1)) + "m/s");
+        fastestSpeed.setText("    fastest speed: " +
+                fastestSpeed(calculateSpeeds(allDistances.get(allDistances.size()-1), allDurations.get(allDurations.size()-1))) + "m/s");
+        totalDistance.setText("    total distance: " + totalDistances(allDistances.get(allDistances.size()-1)) + "m");
     }
 
-    private float avgSpeed(float[] distances,long[] durations) {
+    //get all information sent from main activity
+    private void getAllInfo() {
 
+        numMarkers = bundle.getInt("numMarkers");
+        allDistances = new ArrayList<>();
+        allDurations = new ArrayList<>();
+
+        for(int i = 0; i < numMarkers; i++) {
+            allDistances.add(bundle.getFloatArray("distance " + i));
+            allDurations.add(bundle.getFloatArray("duration " + i));
+        }
+    }
+
+    //calculate average speed
+    private float avgSpeed(float[] distances,float[] durations) {
         return totalDistances(distances) / totalDuration(durations);
     }
 
+    //calculate all speeds at each time stamp
+    private float[] calculateSpeeds(float[] distances,float[] durations) {
+
+        int size = distances.length;
+        float[] speeds = new float[size];
+
+        for(int i = 0; i < size; i++) {
+            speeds[i] = distances[i] / durations[i];
+        }
+
+        return speeds;
+    }
+
+    //get the fastest speed
     public float fastestSpeed(float[] speeds) {
 
         float fastestSpeed = 0;
@@ -77,6 +107,7 @@ public class Details extends AppCompatActivity {
         return fastestSpeed;
     }
 
+    //get the total move distance
     private float totalDistances(float[] distances) {
 
         float totalDistance = 0;
@@ -88,11 +119,13 @@ public class Details extends AppCompatActivity {
         }
 
         return totalDistance;
+        //return (float)(Math.round(totalDistance*100)/100);
     }
 
-    private long totalDuration(long[] durations) {
+    //get speeds at all time stamps
+    private float totalDuration(float[] durations) {
 
-        long totalDuration = 0;
+        float totalDuration = 0;
 
         if(durations != null) {
             for(int i = 0; i < durations.length; i++) {

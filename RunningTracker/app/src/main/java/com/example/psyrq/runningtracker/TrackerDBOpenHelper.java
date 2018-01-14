@@ -24,7 +24,6 @@ public class TrackerDBOpenHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        //db.execSQL("DROP TABLE IF EXISTS tracker");
         db.execSQL("CREATE TABLE tracker(trackerId INTEGER PRIMARY KEY AUTOINCREMENT,trackerMarker INTEGER,trackerLatitude double,trackerLongitude double,trackerTime INTEGER,trackerLocation VARCHAR(128))");
         Log.d(tag, date.toString());
     }

@@ -21,7 +21,15 @@
 
         <provider
             android:name=".TrackerContentProvider"
-            android:authorities="com.example.psyrq.trackerprovider"></provider>
+            android:authorities="com.example.psyrq.trackerprovider">
+        </provider>
+
+        <receiver android:name=".TrackerReceiver">
+            <intent-filter>
+                <action android:name="com.example.psyrq.runningtracker.MY_LOCATION_RECEIVER"></action>
+                <action android:name="com.example.psyrq.runningtracker.MY_MAP_RECEIVER"></action>
+            </intent-filter>
+        </receiver>
 
         <service
             android:name=".TrackerService"

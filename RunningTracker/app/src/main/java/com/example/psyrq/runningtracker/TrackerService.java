@@ -18,8 +18,6 @@ import android.widget.Toast;
 
 public class TrackerService extends Service {
 
-    public static int MARKER;
-
     Context mContext;
     private SQLiteDatabase db;
     private TrackerDBOpenHelper myDBHelper;
@@ -28,30 +26,7 @@ public class TrackerService extends Service {
     private final String tag = "running tracker service";
     private TrackerBinder binder = new TrackerBinder();
 
-    private double myLatitude;
-    private double myLongitude;
-    private long curTime;
-
-    private int i;
-
-    private float[] distances;
-    private float[] markedDistances;
-
-    private long[] durations;
-    private long[] markedDurations;
-
-    private long[] timeStamps;
-    private long[] markedTimeStamps;
-
-    private float[] speeds;
-    private float[] markedSpeeds;
-
-    private Location[] allLocations;
-    private Location[] markedLocations;
-
-    private double[][] allLocationInfo;
-    private double[][] markedLocationInfo;
-
+    int lastMarkers = 0;
     private double[] curLocationInfo = new double[2];
 
     LocationManager locationManager;
@@ -68,150 +43,77 @@ public class TrackerService extends Service {
         myDBHelper = new TrackerDBOpenHelper(mContext, "my.db", null, 1);
         db = myDBHelper.getWritableDatabase();
 
+        //set the location listener when movement happened
         locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
         locationListener = new MyLocationListener();
 
         try{
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 5, locationListener);
-            curLocationInfo[0] = myLatitude;
-            curLocationInfo[1] = myLongitude;
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 1, locationListener);
         }catch(SecurityException se) {
             Log.i(tag, se.toString());
         }
+
 
         Log.i(tag, "onCreate");
     }
 
     public class TrackerBinder extends Binder {
 
-        //get current location
-        public double[] getCurLocationInfo() {
-            return curLocationInfo;
+        public int getLastMarkers() {
+            return lastMarkers();
         }
 
-        public double[][] getAllLocationInfo() {
-            return allLocationInfo;
-        }
+        //get all records in the databas for some period of running
+        public Location[] getMarkedLocations(int marker) {
 
-        public long[] getAllTimeInfo() {
-            return timeStamps;
-        }
+            int i = 0;
+            int markedRecord = getCount(marker);
+            double[][] locationInfo = new double[markedRecord][2];
+            long[] timeStamps = new long[markedRecord];
+            Location[] locations = new Location[markedRecord];
 
-        public float[] getAllDistances() {
-            return distances;
-        }
-
-        public long[] getAllDurations() {
-            return durations;
-        }
-
-        public float[] getAllSpeeds() {
-            return speeds;
-        }
-
-        public float[] getMarkedDistances() {
-            return markedDistances;
-        }
-
-        public long[] getMarkedDurations() {
-            return markedDurations;
-        }
-
-        public float[] getMarkedSpeeds() {
-            return markedSpeeds;
-        }
-
-        public void initialization() {
-
-            int numOfAllRecords = getCount();
-
-            Cursor cursor = db.rawQuery("select * from tracker where trackerId = ?", new String[]{String.valueOf(numOfAllRecords)});
-            if(cursor.moveToFirst())
-                MARKER = cursor.getInt(cursor.getColumnIndex("trackerMarker"));
-            cursor.close();
-
-            distances = new float[numOfAllRecords-1];
-            durations = new long[numOfAllRecords-1];
-            speeds = new float[numOfAllRecords-1];
-            timeStamps = new long[numOfAllRecords];
-            allLocationInfo = new double[numOfAllRecords][2];
-            allLocations = new Location[numOfAllRecords];
-
-            int numOfMarkedRecords;
-            if(MARKER != 0) {
-                numOfMarkedRecords = getCount(MARKER-1);
-                markedDistances = new float[numOfMarkedRecords-1];
-                markedDurations = new long[numOfMarkedRecords-1];
-                markedSpeeds = new float[numOfMarkedRecords-1];
-                markedTimeStamps = new long[numOfMarkedRecords-1];
-                markedLocationInfo = new double[numOfMarkedRecords][2];
-                markedLocations = new Location[numOfMarkedRecords];
-            }
-
-        }
-
-        //get all coordinates of locations in the database
-        public void getALlCoordinates() {
-
-            i = 0;
-            Cursor cursor = resolver.query(TrackerProviderContract.URI.ID_QUERY, null, null, null, null);
-
+            Cursor cursor = resolver.query(TrackerProviderContract.URI.ID_QUERY, null, "trackerMarker = ?", new String[]{String.valueOf(marker)}, null);
             if(cursor.moveToFirst()) {
                 do{
-                    allLocationInfo[i][0] = cursor.getDouble(cursor.getColumnIndex("trackerLatitude"));
-                    allLocationInfo[i][1] = cursor.getDouble(cursor.getColumnIndex("trackerLongitude"));
+                    //package the latitude, longitude and time into a location object
+                    locationInfo[i][0] = cursor.getDouble(cursor.getColumnIndex("trackerLatitude"));
+                    locationInfo[i][1] = cursor.getDouble(cursor.getColumnIndex("trackerLongitude"));
                     timeStamps[i] = cursor.getLong(cursor.getColumnIndex("trackerTime"));
+                    locations[i] = coordinateToLocation(locationInfo[i][0], locationInfo[i][1], timeStamps[i]);
                     i++;
                 }while(cursor.moveToNext());
             }
+            cursor.close();
+
+            return locations;
         }
 
-        public void getAllMarkedCoordinates(int marker) {
+        //calculate distances between two locations sequentially in some period
+        public float[] calculateDistances(int marker) {
 
-            i = 0;
-            if(marker != 0) {
-                Cursor cursor = resolver.query(TrackerProviderContract.URI.ID_QUERY, null, "trackerMarker = ?", new String[]{String.valueOf(marker)}, null);
-                if(cursor.moveToFirst()) {
-                    do{
-                        markedLocationInfo[i][0] = cursor.getDouble(cursor.getColumnIndex("trackerLatitude"));
-                        markedLocationInfo[i][1] = cursor.getDouble(cursor.getColumnIndex("trackerLongitude"));
-                        markedTimeStamps[i] = cursor.getLong(cursor.getColumnIndex("trackerTime"));
-                        i++;
-                    }while(cursor.moveToNext());
-                }
+            Location[] markedLocations = getMarkedLocations(marker);
+            float[] distances = new float[markedLocations.length-1];
+
+            for(int i = 0; i < distances.length; i++) {
+                distances[i] = getDistance(markedLocations[i], markedLocations[i+1]);
             }
+
+            return distances;
         }
 
-        //calculate distances and speeds between two locations sequentially in the database
-        public void calculations() {
+        //calculate time differences between two locations sequentially in some period
+        public float[] calculateDurations(int marker) {
 
-            for(int i = 0; i < allLocationInfo.length; i++) {
-                allLocations[i] = coordinateToLocation(allLocationInfo[i][0], allLocationInfo[i][1], timeStamps[i]);
+            Location[] markedLocations = getMarkedLocations(marker);
+            float[] durations = new float[markedLocations.length-1];
+
+            for(int i = 0; i < durations.length; i++) {
+                durations[i] = getDuration(markedLocations[i], markedLocations[i+1]);
             }
 
-            for(int i = 0; i < allLocations.length-1; i++) {
-
-                distances[i] = getDistance(allLocations[i], allLocations[i+1]);
-                durations[i] = getTime(allLocations[i], allLocations[i+1]);
-                speeds[i] = distances[i] / durations[i];
-                //Log.i(tag, "distances: " + String.valueOf(distances[i]) + " speed(m/s): " + String.valueOf(speeds[i]));
-            }
-
-            if(MARKER != 0) {
-                for(int i = 0; i < markedLocationInfo.length; i++) {
-                    markedLocations[i] = coordinateToLocation(markedLocationInfo[i][0], markedLocationInfo[i][1], markedTimeStamps[i]);
-                }
-
-                for(int i = 0; i < markedLocations.length-1; i++) {
-
-                    markedDistances[i] = getDistance(markedLocations[i], markedLocations[i+1]);
-                    markedDurations[i] = getTime(markedLocations[i], markedLocations[i+1]);
-                    markedSpeeds[i] = markedDistances[i] / markedDurations[i];
-                }
-            }
+            return durations;
         }
-
-        //create a location with the saved latitude, longitude and durations
+        //package a location with the saved latitude, longitude and durations
         private Location coordinateToLocation(double latitude, double longitude, long time) {
 
             Location location = new Location("point");
@@ -229,22 +131,24 @@ public class TrackerService extends Service {
             Toast.makeText(getApplicationContext(), "clear all records", Toast.LENGTH_SHORT).show();
         }
 
-        //get the number of record in the database
-        public int getCount() {
+        //get the marker of last record in the database
+        public int lastMarkers() {
 
-            Cursor cursor = db.rawQuery("SELECT COUNT (*) FROM tracker", null);
-            cursor.moveToFirst();
-            int result = cursor.getInt(0);
-            cursor.close();
+            Cursor cursor = db.rawQuery("select * from tracker order by trackerId desc limit 0,1", null);
+            if(cursor.moveToFirst()) {
+                lastMarkers = cursor.getInt(cursor.getColumnIndex("trackerMarker"));
+            }
 
-            return result;
+            return lastMarkers;
         }
 
-        public int getCount(int marker) {
+        //get how many records for a period of running marked by the marker
+        private int getCount(int marker) {
 
+            int result = 0;
             Cursor cursor = db.rawQuery("SELECT Count (*) FROM tracker where trackerMarker = ?", new String[]{String.valueOf(marker)});
-            cursor.moveToFirst();
-            int result = cursor.getInt(0);
+            if(cursor.moveToFirst())
+                result = cursor.getInt(0);
             cursor.close();
 
             return result;
@@ -252,32 +156,37 @@ public class TrackerService extends Service {
 
         //get distances between two different locations
         private float getDistance(Location lastLocation, Location curLocation) {
-
-            float distance = curLocation.distanceTo(lastLocation);
-            return distance;
+            return curLocation.distanceTo(lastLocation);
         }
 
         //get durations durations between two different locations
-        private long getTime(Location lastLocation, Location curLocation) {
-
-            long time = curLocation.getTime() - lastLocation.getTime();
-            return time / 1000;
+        private float getDuration(Location lastLocation, Location curLocation) {
+            return (curLocation.getTime() - lastLocation.getTime()) / 1000;
         }
     }
 
-    public class MyLocationListener implements LocationListener {
+    //implement the location listener
+    private class MyLocationListener implements LocationListener {
 
         @Override
         public void onLocationChanged(Location location) {
 
-            myLatitude = location.getLatitude();
-            myLongitude = location.getLongitude();
-            curTime = location.getTime();
+            Intent locationIntent = new Intent();
+            locationIntent.setAction("com.example.psyrq.runningtracker.MY_LOCATION_RECEIVER");
 
+            curLocationInfo[0] = location.getLatitude();
+            curLocationInfo[1] = location.getLongitude();
+            long curTime = location.getTime();
+
+            //send the broadcast, current location information included
+            locationIntent.putExtra("locationMsg", curLocationInfo);
+            sendBroadcast(locationIntent);
+
+            //insert the location information into database
             ContentValues insertValues = new ContentValues();
-            insertValues.put("trackerMarker", MARKER);
-            insertValues.put("trackerLatitude", myLatitude);
-            insertValues.put("trackerLongitude", myLongitude);
+            insertValues.put("trackerMarker", MainActivity.MARKER);
+            insertValues.put("trackerLatitude", curLocationInfo[0]);
+            insertValues.put("trackerLongitude", curLocationInfo[1]);
             insertValues.put("trackerTime", curTime);
             insertValues.put("trackerLocation", location.toString());
             resolver.insert(TrackerProviderContract.URI.ID_INSERT, insertValues);
@@ -312,6 +221,7 @@ public class TrackerService extends Service {
     @Override
     public boolean onUnbind(Intent intent) {
         super.onUnbind(intent);
+        //stop updating when the service is stopped
         locationManager.removeUpdates(locationListener);
         Log.d(tag, "onUnbind");
         return true;

@@ -14,7 +14,9 @@ import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
 
-    private final String tag = "running tracker";
+    //indicate which period of running it is
+    public static int MARKER;
+    private final String tag = "tracker main";
 
     TrackerService.TrackerBinder binder;
 
@@ -41,10 +43,13 @@ public class MainActivity extends AppCompatActivity {
         Log.d(tag, "main onCreate");
     }
 
+    //bind the buttons with their view
     public void start(View v) {
 
+        //if start button has not been pressed, the pause button cannot be press
         startBtn.setEnabled(false);
         pauseBtn.setEnabled(true);
+        //press start button to connect to the service
         connectTrackerService();
         Toast.makeText(getApplicationContext(), "Recording start", Toast.LENGTH_SHORT).show();
         Log.d(tag, "start record");
@@ -52,65 +57,33 @@ public class MainActivity extends AppCompatActivity {
 
     public void pause(View v) {
 
+        //
         startBtn.setEnabled(true);
         pauseBtn.setEnabled(false);
 
+        //disconnect to the service
         unbindService(trackerConnection);
         stopService(intent);
         trackerConnection = null;
-        TrackerService.MARKER += 1;
+        binder = null;
         Toast.makeText(getApplicationContext(), "Recording stop", Toast.LENGTH_SHORT).show();
-        Log.d(tag, "pause record");
+        Log.d(tag, "pause record, cur curMarker: " + MARKER);
     }
 
     public void showDetails(View v) {
 
-        float[] distances;
-        float[] lastDistances;
-
-        long[] durations;
-        long[] lastDurations;
-
-        float[] speeds;
-        float[] lastSpeeds;
-
         if(binder != null) {
-
-            int numAllRecords = binder.getCount();
-            int numMarkedRecords = binder.getCount(TrackerService.MARKER);
-
-            binder.initialization();
-            binder.getALlCoordinates();
-            binder.getAllMarkedCoordinates(TrackerService.MARKER);
-            binder.calculations();
-            Log.d(tag, "number of records: " + numAllRecords);
-
-            distances = new float[numAllRecords-1];
-            durations = new long[numAllRecords-1];
-            speeds = new float[numAllRecords-1];
-
-            lastDistances = new float[numMarkedRecords-1];
-            lastDurations = new long[numMarkedRecords-1];
-            lastSpeeds = new float[numMarkedRecords-1];
-
-            distances = binder.getAllDistances();
-            durations = binder.getAllDurations();
-            speeds = binder.getAllSpeeds();
-
-            lastDistances = binder.getMarkedDistances();
-            lastDurations = binder.getMarkedDurations();
-            lastSpeeds = binder.getMarkedSpeeds();
-
+            //send bundle to the details activity
+            int numMarkers = binder.getLastMarkers();
             Intent detailsIntent = new Intent(this, Details.class);
             Bundle bundle = new Bundle();
+            bundle.putInt("numMarkers", numMarkers);
+            Log.i(tag, "current Marker number: " + numMarkers);
 
-            bundle.putFloatArray("distances", distances);
-            bundle.putLongArray("durations", durations);
-            bundle.putFloatArray("speeds", speeds);
-
-            bundle.putFloatArray("lastDistances", lastDistances);
-            bundle.putLongArray("lastDurations", lastDurations);
-            bundle.putFloatArray("lastSpeeds", lastSpeeds);
+            for(int i = 0; i < numMarkers; i++) {
+                bundle.putFloatArray("distance " + i, binder.calculateDistances(i+1));
+                bundle.putFloatArray("duration " + i, binder.calculateDurations(i+1));
+            }
 
             detailsIntent.putExtras(bundle);
             startActivity(detailsIntent);
@@ -118,11 +91,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void showRouteOnMap(View v) {
-
+        //jump to map activity to show map
         Intent mapIntent = new Intent(this, MapsActivity.class);
         startActivity(mapIntent);
     }
 
+    //connect to tracker service
     private void connectTrackerService() {
 
         if(trackerConnection == null) {
@@ -131,6 +105,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onServiceConnected(ComponentName name, IBinder service) {
                     binder = (TrackerService.TrackerBinder)service;
+                    MARKER = binder.getLastMarkers()+1;
                     Log.d(tag, "connect to tracker service");
                 }
 
@@ -146,7 +121,9 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        //stop service when activity is destroyed
         unbindService(trackerConnection);
+        stopService(intent);
         super.onDestroy();
         Log.d(tag, "onDestroy");
     }
