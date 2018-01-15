@@ -44,7 +44,7 @@ public class TrackerService extends Service {
         db = myDBHelper.getWritableDatabase();
 
         //set the location listener when movement happened
-        locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         locationListener = new MyLocationListener();
 
         try{
@@ -52,7 +52,6 @@ public class TrackerService extends Service {
         }catch(SecurityException se) {
             Log.i(tag, se.toString());
         }
-
 
         Log.i(tag, "onCreate");
     }

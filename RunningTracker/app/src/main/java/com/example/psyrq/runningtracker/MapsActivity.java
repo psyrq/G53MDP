@@ -32,10 +32,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             locationInfo = intent.getDoubleArrayExtra("locationMsg");
             LatLng myLatLng = new LatLng(locationInfo[0], locationInfo[1]);
             myLines.add(myLatLng);
+            mMap.clear();
             mMap.addPolyline(myLines);
             mMap.moveCamera(CameraUpdateFactory.newLatLng(myLatLng));
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myLatLng, 18));
-            mMap.clear();
             mMap.addMarker(new MarkerOptions().position(myLatLng).title("you are here"));
             Log.i(tag, "location updated");
         }
@@ -49,13 +49,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-
-        IntentFilter filter = new IntentFilter("com.example.psyrq.runningtracker.MY_MAP_RECEIVER");
-
-        registerReceiver(mapReceiver, filter);
-
     }
-
 
     /**
      * Manipulates the map once available.
@@ -72,10 +66,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap = googleMap;
     }
 
+
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        IntentFilter filter = new IntentFilter("com.example.psyrq.runningtracker.MY_MAP_RECEIVER");
+        registerReceiver(mapReceiver, filter);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        //unregister the broadcast receiver
+        unregisterReceiver(mapReceiver);
+    }
+
     @Override
     public void onDestroy() {
         super.onDestroy();
-        //unregister the broadcast receiver
-        unregisterReceiver(mapReceiver);
     }
 }

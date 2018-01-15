@@ -4,8 +4,11 @@ import android.app.Service;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -39,6 +42,14 @@ public class MainActivity extends AppCompatActivity {
         mapBtn = (Button)findViewById(R.id.ShowMap);
 
         pauseBtn.setEnabled(false);
+
+        //open the access location permission
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            //mMap.setMyLocationEnabled(true);
+        } else {
+            ActivityCompat.requestPermissions(this,new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+        }
 
         Log.d(tag, "main onCreate");
     }
@@ -116,6 +127,27 @@ public class MainActivity extends AppCompatActivity {
             };
 
             bindService(intent, trackerConnection, Service.BIND_AUTO_CREATE);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (permissions.length == 1 &&
+                permissions[0] == android.Manifest.permission.ACCESS_FINE_LOCATION &&
+                grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return;
+            }
+            //mMap.setMyLocationEnabled(true);
+        } else {
+            // Permission was denied. Display an error message.
         }
     }
 
