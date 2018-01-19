@@ -76,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
         unbindService(trackerConnection);
         stopService(intent);
         trackerConnection = null;
-        binder = null;
+        //binder = null;
         Toast.makeText(getApplicationContext(), "Recording stop", Toast.LENGTH_SHORT).show();
         Log.d(tag, "pause record, cur curMarker: " + MARKER);
     }
